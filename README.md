@@ -12,8 +12,12 @@ This implementation has been made with [Claude Code](https://github.com/anthropi
 - Added a few short sentences about what I wanted us to do.
 - Asked `> I updated the CLAUDE.md file. What should we do now?`
 - After that, I only said yes to everything. Some tests still don't pass, but those are edge cases. He did follow my recommendations, and built the perfect adapter to run the tests in the original submodule with the new `pass.py` he just built
+- And actually, I just checked, those tests executed with the existing bash implem... See `chat-history/02-fixing-test-suite` to see how I only needed to prompt for a fix - will make a cleaner alternative myself though
 
-Obviously, this is just a quick experiment for now, but I didn't expect things to work as much as they did. I'll just drop a `CHAT_HISTORY.md` file if you are curious about our conversation.
+You can check the `chat-history` to follow the rest of our changes, I try to only give overall directions and not micromanage: it's funny seeing Claude making little mistakes, and fixing them just as fast as he made those...  
+Feels like watching a beginner, but 10x, or even 100x faster... Maybe in 4 or 5 years I'll have to find something else to do with my life  
+Obviously, this is just a quick experiment for now, and I must say that was quite pleasant  
+Maybe I'll still write some code for some very specific tasks in this repo, but I try to let Claude do as much as he can
 
 ## Features
 

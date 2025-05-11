@@ -2,6 +2,8 @@
 
 This repository contains a Python implementation of [password-store](https://www.passwordstore.org/), the standard Unix password manager. The aim is to provide a single file Python script (`pass.py`) with no external dependencies that offers the same functionality as the original bash script.
 
+*WARNING: IN THIS CURRENT STATE, THERE IS NO GUARANTEE THAT ANYTHING WORKS AT ALL*
+
 ## Claude Code
 
 This implementation has been made with [Claude Code](https://github.com/anthropics/claude-code). All I did was:

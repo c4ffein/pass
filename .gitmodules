@@ -1,3 +1,4 @@
 [submodule "submodules/password-store"]
 	path = submodules/password-store
-	url = git@github.com:zx2c4/password-store.git
+    # url = git@github.com:zx2c4/password-store.git
+	url = ../../zx2c4/password-store.git

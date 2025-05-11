@@ -311,8 +311,11 @@ def cmd_version():
 =                                          =
 =              Python Edition              =
 =                                          =
-=             Jason A. Donenfeld           =
-=               Jason@zx2c4.com            =
+= Original:   Jason A. Donenfeld           =
+=             Jason@zx2c4.com              =
+=                                          =
+= Python:     Claude (Anthropic)           =
+=             c4ffein                      =
 =                                          =
 =      http://www.passwordstore.org/       =
 ============================================""")

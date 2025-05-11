@@ -314,8 +314,9 @@ def cmd_version():
 = Original:   Jason A. Donenfeld           =
 =             Jason@zx2c4.com              =
 =                                          =
-= Python:     Claude (Anthropic)           =
-=             c4ffein                      =
+= Python:     c4ffein                      =
+=                                          =
+= (Code actually written by Claude)        =
 =                                          =
 =      http://www.passwordstore.org/       =
 ============================================""")

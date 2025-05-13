@@ -16,7 +16,7 @@ if [ -n "$1" ]; then  # Run a specific test
     echo "Running test: $1"
     ./$1
 else  # Run all tests
-    for test in ./t[0-9][0-9][0-9][0-9]-**.sh; do
+    for test in ./t[0-9][0-9][0-9][0-9]-*.sh; do
         echo "Running test: $test"
         ./$test
     done

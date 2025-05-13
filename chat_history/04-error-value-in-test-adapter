@@ -1,0 +1,117 @@
+> Could you modify the test_tricks/test-adapter.sh so that, when I run a test, the exit code of the test adapter is the one of the
+   test? And, when running all the tests, the exit code of is ok when all the tests pass and ko if at least one test fails?
+
+● I'll modify the test-adapter.sh script to properly handle exit codes. Let me first check the current implementation.
+
+● Read(test_tricks/test-adapter.sh)…
+  ⎿  Read 28 lines (ctrl+r to expand)
+
+● Now I'll modify the script to handle exit codes properly:
+
+● Update(test_tricks/test-adapter.sh)…
+  ⎿  User rejected update to test_tricks/test-adapter.sh
+     1  #!/usr/bin/env bash
+     2  # This script is used to run the tests from the original password-store project but using our Python implementation.
+     3  
+     4  
+     4  set -e
+     5  cd "$(dirname "$0")"
+     6  
+     7  rm -rf temp-test-env
+     ...
+     15  if [ -n "$1" ]; then  # Run a specific test
+     16      echo "Running test: $1"
+     17      ./$1
+     18      EXIT_CODE=$?
+     19  else  # Run all tests
+     20      EXIT_CODE=0
+     21      for test in ./t[0-9][0-9][0-9][0-9]-*.sh; do
+     22          echo "Running test: $test"
+     23          ./$test
+     24          TEST_EXIT_CODE=$?
+     25          if [ $TEST_EXIT_CODE -ne 0 ]; then
+     26              EXIT_CODE=1
+     27          fi
+     28      done
+     29  fi
+     30  
+     31  cd ../..
+     32  
+     33  rm -rf temp-test-env
+     34  exit $EXIT_CODE
+
+> I don't want to set -e because I want to continue on the loop if a test fails. Unless I misunderstood your code?
+
+● You're absolutely right. Let me modify the script without the set -e to ensure all tests run even if some fail:
+
+● Update(test_tricks/test-adapter.sh)…
+  ⎿  User rejected update to test_tricks/test-adapter.sh
+     1  #!/usr/bin/env bash
+     2  # This script is used to run the tests from the original password-store project but using our Python implementation.
+     3  
+     4  
+     4  cd "$(dirname "$0")"
+     5  
+     6  rm -rf temp-test-env
+     ...
+     15  if [ -n "$1" ]; then  # Run a specific test
+     16      echo "Running test: $1"
+     17      ./$1
+     18      EXIT_CODE=$?
+     19  else  # Run all tests
+     20      EXIT_CODE=0
+     21      for test in ./t[0-9][0-9][0-9][0-9]-*.sh; do
+     22          echo "Running test: $test"
+     23          ./$test
+     24          TEST_EXIT_CODE=$?
+     25          if [ $TEST_EXIT_CODE -ne 0 ]; then
+     26              EXIT_CODE=1
+     27          fi
+     28      done
+     29  fi
+     30  
+     31  cd ../..
+     32  
+     33  rm -rf temp-test-env
+     34  exit $EXIT_CODE
+
+> Could it work without the intermediary TEST_EXIT_CODE variable?
+
+● Yes, we can simplify it without the intermediate variable:
+
+● Update(test_tricks/test-adapter.sh)…
+  ⎿  Updated test_tricks/test-adapter.sh with 6 additions and 1 removal
+     1  #!/usr/bin/env bash
+     2  # This script is used to run the tests from the original password-store project but using our Python implementation.
+     3 
+     4  
+     4  cd "$(dirname "$0")"
+     5 
+     6  rm -rf temp-test-env
+     ...
+     15  if [ -n "$1" ]; then  # Run a specific test
+     16      echo "Running test: $1"
+     17      ./$1
+     18      EXIT_CODE=$?
+     19  else  # Run all tests
+     20      EXIT_CODE=0
+     21      for test in ./t[0-9][0-9][0-9][0-9]-*.sh; do
+     22          echo "Running test: $test"
+     23          ./$test
+     24          if [ $? -ne 0 ]; then
+     25              EXIT_CODE=1
+     26          fi
+     27      done
+     28  fi
+     29 
+     30  cd ../..
+     31 
+     32  rm -rf temp-test-env
+     33  exit $EXIT_CODE
+
+● The test adapter is now modified to:
+  1. Return the exact exit code of the test when running a single test
+  2. Return code 0 if all tests pass, or 1 if any test fails when running all tests
+  3. Continue running all tests even if some tests fail
+
+  Is there anything else you'd like me to adjust in the script?

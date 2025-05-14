@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 rm -rf temp-test-env
 mkdir temp-test-env
 cp -r ../submodules/password-store/tests temp-test-env/tests
-cp -r ../submodules/password-store/src temp-test-env/src
+mkdir temp-test-env/src
 cp ../pass.py temp-test-env/src/password-store.sh
 
 cd temp-test-env/tests

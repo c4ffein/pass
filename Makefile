@@ -1,38 +1,7 @@
-TESTS_DIR ?= submodules/password-store/tests
-
 list-tests:
-	cd $(TESTS_DIR); ls t[0-9][0-9][0-9][0-9]-*.sh
-list-missing-tests:
-	@echo "Checking for tests not in Makefile..."
-	@cd $(TESTS_DIR) && ls t[0-9][0-9][0-9][0-9]-*.sh | sed 's/\.sh$$//' > /tmp/all_tests.txt
-	@grep -o 'test-t[0-9][0-9][0-9][0-9]-[^:]*' $(MAKEFILE_LIST) | sed 's/test-//' > /tmp/makefile_tests.txt
-	@echo "Directory: $(TESTS_DIR)"
-	@echo "Found $$(wc -l < /tmp/all_tests.txt) tests in directory"
-	@echo "Found $$(wc -l < /tmp/makefile_tests.txt) tests in Makefile"
-	@if ! grep -vxf /tmp/makefile_tests.txt /tmp/all_tests.txt > /tmp/missing_tests.txt; then \
-		echo "All tests are already included in the Makefile."; \
-	elif [ ! -s /tmp/missing_tests.txt ]; then \
-		echo "All tests are already included in the Makefile."; \
-	else \
-		echo "Tests in directory but missing from Makefile:"; \
-		cat /tmp/missing_tests.txt; \
-	fi
-	@rm -f /tmp/all_tests.txt /tmp/makefile_tests.txt /tmp/missing_tests.txt
-
-generate-missing-test-targets:
-	@echo "Generating Makefile targets for missing tests..."
-	@cd $(TESTS_DIR) && ls t[0-9][0-9][0-9][0-9]-*.sh | sed 's/\.sh$$//' > /tmp/all_tests.txt
-	@grep -o 'test-t[0-9][0-9][0-9][0-9]-[^:]*' $(MAKEFILE_LIST) | sed 's/test-//' > /tmp/makefile_tests.txt
-	@if ! grep -vxf /tmp/makefile_tests.txt /tmp/all_tests.txt > /tmp/missing_tests.txt || [ ! -s /tmp/missing_tests.txt ]; then \
-		echo "No missing tests to generate targets for."; \
-	else \
-		echo "# Add these targets to your Makefile:"; \
-		while read test; do \
-			echo "test-$$test:"; \
-			echo "	./test_tricks/test-adapter.sh $$test.sh"; \
-		done < /tmp/missing_tests.txt; \
-	fi
-	@rm -f /tmp/all_tests.txt /tmp/makefile_tests.txt /tmp/missing_tests.txt
+	cd submodules/password-store/tests; ls t[0-9][0-9][0-9][0-9]-*.sh
+diff-tests-list:
+	bash -c 'diff <(grep test-t[0-9][0-9][0-9][0-9]-.* Makefile | cut -c6- | grep -o ".*[^:]") <(for f in submodules/password-store/tests/t[0-9][0-9][0-9][0-9]-*.sh; do echo "$${f%.sh}" | cut -c33-; done)'
 test:
 	./test_tricks/test-adapter.sh
 test-t0001-sanity-checks:

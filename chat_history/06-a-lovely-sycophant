@@ -1,0 +1,36 @@
+> Hello again. I made some modifications to your Makefile update. What do you think? You can just: git diff 
+  a90e3251978d2e54a66f7417c2791d9fb398ac7f b6a4b06b6074737ed43d904c5e7f7312e63210c5 -- Makefile
+
+✻ Thinking…
+
+  The user is asking me to display the difference between two specific git commits for the Makefile. They've provided the commit 
+  hashes:
+  - a90e3251978d2e54a66f7417c2791d9fb398ac7f (before)
+  - b6a4b06b6074737ed43d904c5e7f7312e63210c5 (after)
+
+  I'll use the git diff command to show the changes between these two commits, focusing only on the Makefile.
+
+● Bash(git diff a90e3251978d2e54a66f7417c2791d9fb398ac7f b6a4b06b6074737ed43d904c5e7f7312e63210c5 -- Makefile)…
+  ⎿  diff --git a/Makefile b/Makefile
+     index 62d3a88..090a37c 100644
+     --- a/Makefile
+     +++ b/Makefile
+     @@ -1,38 +1,7 @@
+
+     … +36 lines (ctrl+r to expand)
+
+     +diff-tests-list:
+     +  bash -c 'diff <(grep test-t[0-9][0-9][0-9][0-9]-.* Makefile | cut -c6- | grep -o ".*[^:]") <(for f in
+     submodules/password-store/tests/t[0-9][0-9][0-9][0-9]-*.sh; do echo "$${f%.sh}" | cut -c33-; done)'
+      test:
+      	./test_tricks/test-adapter.sh
+      test-t0001-sanity-checks:
+
+● The Makefile has been significantly simplified. The main changes:
+
+  1. Removed the hardcoded TESTS_DIR variable
+  2. Simplified the list-tests command
+  3. Replaced the verbose list-missing-tests and generate-missing-test-targets with a more concise diff-tests-list command that
+  directly compares tests in the Makefile against files in the tests directory
+
+  The new approach is much cleaner and accomplishes the same goal with less code.

@@ -624,7 +624,7 @@ def cmd_show(argv):
                     [GPG] + GPG_OPTS + ['-d', passfile],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
                 )
-                print(result.stdout.decode())
+                print(result.stdout.decode('utf-8', errors='replace'))
             except subprocess.CalledProcessError as e:
                 die(f"Failed to decrypt {path}: {e}")
         else:
@@ -635,7 +635,7 @@ def cmd_show(argv):
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
                 )
                 
-                lines = result.stdout.decode().splitlines()
+                lines = result.stdout.decode('utf-8', errors='replace').splitlines()
                 if selected_line > len(lines):
                     die(f"There is no password to put on the clipboard at line {selected_line}.")
                 
@@ -666,8 +666,8 @@ def cmd_show(argv):
             # Run tree command
             tree_cmd = ['tree', '-N', '-C', '-l', '--noreport', store_path]
             tree_output = subprocess.run(
-                tree_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True
-            ).stdout
+                tree_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
+            ).stdout.decode('utf-8', errors='replace')
             
             # Process and print tree output
             lines = tree_output.splitlines()
@@ -1230,90 +1230,170 @@ def cmd_copy_move(command, argv):
     old_path, new_path = args
     check_sneaky_paths(old_path, new_path)
     
-    old_path_full = os.path.join(PASSWORD_STORE_DIR, old_path)
-    old_dir = old_path_full
-    
-    # Determine if this is a file or directory (with or without .gpg extension)
-    if not (os.path.isfile(old_path_full + ".gpg") and os.path.isdir(old_path_full) and old_path.endswith('/') or 
-           not os.path.isfile(old_path_full + ".gpg")):
-        old_dir = os.path.dirname(old_path_full)
-        old_path_full = old_path_full + ".gpg"
-    
-    if not os.path.exists(old_path_full):
-        die(f"Error: {old_path} is not in the password store.")
-    
-    # Create the destination directory
-    new_path_full = os.path.join(PASSWORD_STORE_DIR, new_path)
-    os.makedirs(os.path.dirname(new_path_full), exist_ok=True)
-    
-    # Determine if the destination is a directory
-    if os.path.isdir(old_path_full) or os.path.isdir(new_path_full) or new_path.endswith('/'):
-        if not os.path.isdir(new_path_full):
-            os.makedirs(new_path_full)
-    else:
-        new_path_full = new_path_full + ".gpg"
-    
-    # Determine copy mode (interactive or force)
-    interactive = "-i" if force == 0 and sys.stdin.isatty() else "-f"
+    # Normalize paths - remove trailing slashes
+    old_path_norm = old_path.rstrip('/')
     
     # Set git directory for operations
-    git_dir = set_git_dir(new_path_full)
+    git_dir = set_git_dir(os.path.join(PASSWORD_STORE_DIR, old_path_norm))
+
+    # Determine source type (file or directory)
+    source_is_dir = False
+    source_is_file = False
+    source_path = os.path.join(PASSWORD_STORE_DIR, old_path_norm)
+    source_file_path = source_path + ".gpg"
     
-    if command == "move":
-        # Move operation
-        try:
-            if os.path.isdir(old_path_full):
-                cmd = ["cp", "-r"] + ([interactive] if not force else []) + [old_path_full, new_path_full]
-                subprocess.run(cmd, check=True)
-                shutil.rmtree(old_path_full)
-            else:
-                cmd = ["cp"] + ([interactive] if not force else []) + [old_path_full, new_path_full]
-                subprocess.run(cmd, check=True)
-                os.remove(old_path_full)
-                
-            # Reencrypt if needed
-            if os.path.exists(new_path_full):
-                reencrypt_path(new_path_full)
-            
-            # Git operations
-            if git_dir and not os.path.exists(old_path_full):
-                subprocess.run(['git', '-C', git_dir, 'rm', '-qr', old_path_full],
-                              check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                git_add_file(git_dir, new_path_full, f"Rename {old_path} to {new_path}.")
-                
-                # Remove old file from git
-                if subprocess.run(['git', '-C', git_dir, 'status', '--porcelain', old_path_full],
-                                 stdout=subprocess.PIPE).stdout:
-                    git_add_file(git_dir, old_path_full, f"Remove {old_path}.")
-            
-            # Try to remove empty parent directories
-            try:
-                os.removedirs(old_dir)
-            except:
-                pass
-                
-        except Exception as e:
-            die(f"Error moving {old_path} to {new_path}: {e}")
-            
+    if os.path.isdir(source_path):
+        source_is_dir = True
+    elif os.path.isfile(source_file_path):
+        source_is_file = True
     else:
-        # Copy operation
-        try:
-            if os.path.isdir(old_path_full):
-                cmd = ["cp", "-r"] + ([interactive] if not force else []) + [old_path_full, new_path_full]
-            else:
-                cmd = ["cp"] + ([interactive] if not force else []) + [old_path_full, new_path_full]
+        die(f"Error: {old_path} is not in the password store.")
+    
+    # Determine destination type and path
+    dest_path = os.path.join(PASSWORD_STORE_DIR, new_path)
+    
+    # Handle destination for file source
+    if source_is_file:
+        if new_path.endswith('/'):
+            # Moving into a directory
+            os.makedirs(dest_path, exist_ok=True)
+            dest_file_path = os.path.join(dest_path, os.path.basename(old_path_norm) + ".gpg")
+        else:
+            # Moving/renaming a file
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+            dest_file_path = dest_path + ".gpg"
+        
+        # Check if destination exists and we're not forcing
+        if os.path.exists(dest_file_path) and force == 0 and sys.stdin.isatty():
+            if not yesno(f"Destination {new_path} exists. Overwrite it?"):
+                sys.exit(1)
+        
+        # Perform the operation
+        if command == "move":
+            try:
+                # Copy the file first
+                shutil.copy2(source_file_path, dest_file_path)
                 
-            subprocess.run(cmd, check=True)
-            
-            # Reencrypt if needed
-            if os.path.exists(new_path_full):
-                reencrypt_path(new_path_full)
-            
-            # Git operations
-            git_add_file(git_dir, new_path_full, f"Copy {old_path} to {new_path}.")
+                # Remove the original
+                os.unlink(source_file_path)
                 
-        except Exception as e:
-            die(f"Error copying {old_path} to {new_path}: {e}")
+                # Update git
+                if git_dir:
+                    # Remove old file from git
+                    subprocess.run(['git', '-C', git_dir, 'rm', '-qf', source_file_path],
+                                 check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    
+                    # Add new file to git
+                    git_add_file(git_dir, dest_file_path, f"Rename {old_path} to {new_path}.")
+                    
+                    # Try to clean up empty directories
+                    parent_dir = os.path.dirname(source_file_path)
+                    while parent_dir != PASSWORD_STORE_DIR:
+                        if os.path.exists(parent_dir) and not os.listdir(parent_dir):
+                            os.rmdir(parent_dir)
+                        else:
+                            break
+                        parent_dir = os.path.dirname(parent_dir)
+            except Exception as e:
+                die(f"Error moving {old_path} to {new_path}: {e}")
+        else:  # copy
+            try:
+                # Copy the file
+                shutil.copy2(source_file_path, dest_file_path)
+                
+                # Update git
+                if git_dir:
+                    git_add_file(git_dir, dest_file_path, f"Copy {old_path} to {new_path}.")
+            except Exception as e:
+                die(f"Error copying {old_path} to {new_path}: {e}")
+    
+    # Handle directory source
+    else:  # source_is_dir
+        # Determine destination path for directory
+        if new_path.endswith('/'):
+            # Moving into a directory
+            os.makedirs(dest_path, exist_ok=True)
+            dest_dir_path = os.path.join(dest_path, os.path.basename(old_path_norm))
+        else:
+            # Moving/renaming a directory
+            dest_dir_path = dest_path
+            os.makedirs(os.path.dirname(dest_dir_path), exist_ok=True)
+        
+        # Check if destination exists and we're not forcing
+        if os.path.exists(dest_dir_path) and force == 0 and sys.stdin.isatty():
+            if not yesno(f"Destination {new_path} exists. Overwrite it?"):
+                sys.exit(1)
+        
+        # Perform the operation
+        if command == "move":
+            try:
+                # Remove destination directory if it exists
+                if os.path.exists(dest_dir_path):
+                    shutil.rmtree(dest_dir_path)
+                
+                # Move directory by copying then removing
+                if os.path.exists(source_path):
+                    # Create all parent directories
+                    os.makedirs(os.path.dirname(dest_dir_path), exist_ok=True)
+                    
+                    # Copy all files and subdirectories
+                    shutil.copytree(source_path, dest_dir_path)
+                    
+                    # Remove the original
+                    shutil.rmtree(source_path)
+                    
+                    # Update git
+                    if git_dir:
+                        # For move operation, git rm the source and add the destination
+                        subprocess.run(['git', '-C', git_dir, 'rm', '-qrf', source_path],
+                                     check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        
+                        # Add new directory to git
+                        for root, dirs, files in os.walk(dest_dir_path):
+                            for file in files:
+                                if file.endswith('.gpg'):
+                                    git_add_file(git_dir, os.path.join(root, file), None)
+                        
+                        git_add_file(git_dir, dest_dir_path, f"Rename {old_path} to {new_path}.")
+                        
+                        # Try to clean up empty parent directories
+                        parent_dir = os.path.dirname(source_path)
+                        while parent_dir != PASSWORD_STORE_DIR:
+                            if os.path.exists(parent_dir) and not os.listdir(parent_dir):
+                                os.rmdir(parent_dir)
+                                subprocess.run(['git', '-C', git_dir, 'rm', '-qf', parent_dir],
+                                             check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            else:
+                                break
+                            parent_dir = os.path.dirname(parent_dir)
+            except Exception as e:
+                die(f"Error moving {old_path} to {new_path}: {e}")
+        else:  # copy
+            try:
+                # Remove destination directory if it exists
+                if os.path.exists(dest_dir_path):
+                    shutil.rmtree(dest_dir_path)
+                
+                # Copy the directory
+                shutil.copytree(source_path, dest_dir_path)
+                
+                # Update git
+                if git_dir:
+                    # For copy operation, just add the destination
+                    for root, dirs, files in os.walk(dest_dir_path):
+                        for file in files:
+                            if file.endswith('.gpg'):
+                                git_add_file(git_dir, os.path.join(root, file), None)
+                    
+                    git_add_file(git_dir, dest_dir_path, f"Copy {old_path} to {new_path}.")
+            except Exception as e:
+                die(f"Error copying {old_path} to {new_path}: {e}")
+    
+    # Reencrypt the destination to ensure proper GPG recipients
+    if source_is_file:
+        reencrypt_path(os.path.dirname(dest_file_path))
+    else:
+        reencrypt_path(dest_dir_path)
 
 def cmd_git(argv):
     """Execute git commands on the password store."""

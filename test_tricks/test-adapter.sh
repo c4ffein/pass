@@ -8,7 +8,12 @@ rm -rf temp-test-env
 mkdir temp-test-env
 cp -r ../submodules/password-store/tests temp-test-env/tests
 mkdir temp-test-env/src
-cp ../pass.py temp-test-env/src/password-store.sh
+if [[ "${TEST_ORIGINAL_PASS_VERSION,,}" == "true" ]]; then
+    echo "Running tests on original password-store.sh"
+    cp ../submodules/password-store/src/password-store.sh temp-test-env/src/password-store.sh
+else
+    cp ../pass.py temp-test-env/src/password-store.sh
+fi
 
 cd temp-test-env/tests
 

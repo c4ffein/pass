@@ -27,44 +27,15 @@ To test the Python implementation against the original test suite:
 
 ```bash
 # Run all tests using the Python implementation
-./test-adapter.sh
+./test_tricks/test-adapter.sh
 
 # Run a specific test
-./test-adapter.sh t0001-sanity-checks.sh
+./test_tricks/test-adapter.sh t0001-sanity-checks.sh
 ```
 
 The test adapter sets the necessary environment variables and uses the Python implementation instead of the original bash script when running the tests.
 
-## Common Commands
-
-### Building and Installation
-
-To build and install pass:
-
-```bash
-# Navigate to the password-store submodule
-cd submodules/password-store
-
-# Install to the default location (/usr/bin)
-make install
-
-# Install to a custom location
-PREFIX=$HOME/.local make install
-```
-
-### Running Tests
-
-Password Store includes a comprehensive test suite using Sharness:
-
-```bash
-# Run all tests
-cd submodules/password-store
-make test
-
-# Run a specific test with verbose output
-cd submodules/password-store
-tests/t0001-sanity-checks.sh -v
-```
+You can run the tests against the original `password-store.sh` by using `TEST_ORIGINAL_PASS_VERSION=TRUE ./test_tricks/test-adapter.sh`
 
 ### Using Password Store
 

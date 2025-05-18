@@ -69,14 +69,6 @@ The Python implementation is designed to be fully compatible with the original b
 - `ONLY_ORIGINAL_TESTS=TRUE make test` tests only against the original test suite, unhandled by file-specific tests
 - `ONLY_ADDITIONAL_TESTS=TRUE make test` tests only against the additional test suite, unhandled by file-specific tests
 
-```bash
-# Run all tests using the Python implementation
-./test-adapter.sh
-
-# Run a specific test
-./test-adapter.sh t0001-sanity-checks.sh
-```
-
 ## Project Structure
 
 - `pass.py`: The Python implementation of password-store

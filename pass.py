@@ -821,6 +821,30 @@ def cmd_grep(argv):
     # Process all files in the password store
     matches = []
     
+    # Parse options
+    case_sensitive = True      # Default is case sensitive
+    use_regex = False          # Default is to not use regex
+    fixed_string = False       # Default is to not treat pattern as fixed string
+    
+    # Process options
+    search_args = argv.copy()
+    i = 0
+    while i < len(search_args) - 1:  # Last arg is the search pattern
+        if search_args[i] == '-i':
+            case_sensitive = False
+            search_args.pop(i)
+        elif search_args[i] == '-E':
+            use_regex = True
+            search_args.pop(i)
+        elif search_args[i] == '-F':
+            fixed_string = True
+            search_args.pop(i)
+        else:
+            i += 1
+            
+    # Get the search term (last argument)
+    search_term = search_args[-1]
+    
     for root, dirs, files in os.walk(PASSWORD_STORE_DIR):
         # Skip .git and .extensions directories
         if '.git' in dirs:
@@ -844,36 +868,41 @@ def cmd_grep(argv):
                 # Get the relative path for display (without .gpg extension)
                 rel_path = os.path.relpath(file_path, PASSWORD_STORE_DIR)[:-4]
                 
-                # Search for pattern using grep
+                # Search for pattern using appropriate method
                 try:
-                    # Check if -i flag is present for case insensitive search
-                    if '-i' in argv:
-                        case_sensitive = False
-                        search_args = [arg for arg in argv if arg != '-i']
-                    else:
-                        case_sensitive = True
-                        search_args = argv.copy()
-                    
-                    # Get the search term (last argument)
-                    search_term = search_args[-1]
-                    
-                    # Remove the search term from search_args
-                    search_args = search_args[:-1]
-                    
-                    # Manual search implementation
                     match_found = False
                     matched_lines = []
                     
                     # Split content into lines and search each line
                     for line in decrypted.splitlines():
-                        if case_sensitive:
-                            if search_term in line:
-                                match_found = True
-                                matched_lines.append(line)
-                        else:  # Case insensitive
-                            if search_term.lower() in line.lower():
-                                match_found = True
-                                matched_lines.append(line)
+                        line_match = False
+                        
+                        if fixed_string:  # -F option: fixed string matching
+                            if case_sensitive:
+                                line_match = search_term in line
+                            else:  # Case insensitive
+                                line_match = search_term.lower() in line.lower()
+                        elif use_regex:  # -E option: regex matching
+                            try:
+                                if case_sensitive:
+                                    line_match = re.search(search_term, line) is not None
+                                else:  # Case insensitive
+                                    line_match = re.search(search_term, line, re.IGNORECASE) is not None
+                            except re.error:
+                                # If regex is invalid, treat as fixed string
+                                if case_sensitive:
+                                    line_match = search_term in line
+                                else:  # Case insensitive
+                                    line_match = search_term.lower() in line.lower()
+                        else:  # Default: simple substring search
+                            if case_sensitive:
+                                line_match = search_term in line
+                            else:  # Case insensitive
+                                line_match = search_term.lower() in line.lower()
+                        
+                        if line_match:
+                            match_found = True
+                            matched_lines.append(line)
                     
                     if match_found:
                         # Format output as expected by tests
@@ -1191,7 +1220,7 @@ def cmd_generate(argv):
         temp_file = f"{passfile}.tmp.{random.randint(1000000, 9999999)}.--"
         
         try:
-            # Get the existing content without the first line
+            # Get the existing content
             result = subprocess.run(
                 [GPG] + GPG_OPTS + ['-d', passfile],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
@@ -1199,9 +1228,10 @@ def cmd_generate(argv):
             content = result.stdout.decode().splitlines()
             
             # Create new content with the new password as the first line
-            new_content = password + '\n'
+            new_content = password
             if len(content) > 1:
-                new_content += '\n'.join(content[1:])
+                # Add the rest of the lines with appropriate newlines
+                new_content = password + '\n' + '\n'.join(content[1:])
             
             # Encrypt to temporary file
             encrypt_proc = subprocess.run(

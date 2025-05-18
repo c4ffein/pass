@@ -62,7 +62,7 @@ The Python implementation is designed to be fully compatible with the original b
 
 - `make test` tests the Python implementation against both the original test suite and additional tests
 - `make list-test` lists the available tests, including both the original and additional test suites
-- `make diff-tests-list` Show tests that are still not included in the Makefile, or missings in you files
+- `make diff-tests-list` Show tests that are still not included in the Makefile, or missing in you files
 - `make test-t0001-sanity-checks` Run a specific test file
 - `TEST_ORIGINAL_PASS_VERSION=TRUE make test` Run the test suite against the original `password-store.sh`
   - Also works with specific tests like `TEST_ORIGINAL_PASS_VERSION=TRUE make test-t0001-sanity-checks`

@@ -1,7 +1,11 @@
 list-tests:
-	cd submodules/password-store/tests; ls t[0-9][0-9][0-9][0-9]-*.sh
+	@echo Original tests:
+	@cd submodules/password-store/tests; ls -1 t[0-9][0-9][0-9][0-9]-*.sh; cd ../../..
+	@echo Additional tests:
+	@cd test_tricks/additional-tests; ls -1 u[0-9][0-9][0-9][0-9]-*.sh; cd ../../../
 diff-tests-list:
-	bash -c 'diff <(grep test-t[0-9][0-9][0-9][0-9]-.* Makefile | cut -c6- | grep -o ".*[^:]") <(for f in submodules/password-store/tests/t[0-9][0-9][0-9][0-9]-*.sh; do echo "$${f%.sh}" | cut -c33-; done)'
+	@bash -c 'diff <(grep test-t[0-9][0-9][0-9][0-9]-.* Makefile | cut -c6- | grep -o ".*[^:]") <(for f in submodules/password-store/tests/t[0-9][0-9][0-9][0-9]-*.sh; do echo "$${f%.sh}" | cut -c33-; done)'
+	@bash -c 'diff <(grep test-u[0-9][0-9][0-9][0-9]-.* Makefile | cut -c6- | grep -o ".*[^:]") <(for f in test_tricks/additional-tests/u[0-9][0-9][0-9][0-9]-*.sh; do echo "$${f%.sh}" | cut -c30-; done)'
 test:
 	./test_tricks/test-adapter.sh
 test-t0001-sanity-checks:

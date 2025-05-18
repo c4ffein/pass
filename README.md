@@ -2,22 +2,9 @@
 
 This repository contains a Python implementation of [password-store](https://www.passwordstore.org/), the standard Unix password manager. The aim is to provide a single file Python script (`pass.py`) with no external dependencies that offers the same functionality as the original bash script.
 
-*WARNING: IN THIS CURRENT STATE, THERE IS NO GUARANTEE THAT ANYTHING WORKS AT ALL*
-
 ## Claude Code
 
-This implementation has been made with [Claude Code](https://github.com/anthropics/claude-code). All I did was:
-- Load the initial implementation in a submodule (in case we may want to update the test suite...) so that he had access to both the initial implementation and the tests.
-- Let him generate the initial `CLAUDE.md` file, he understood very well the structure of this repository and described it in quite a straightforward way.
-- Added a few short sentences about what I wanted us to do.
-- Asked `> I updated the CLAUDE.md file. What should we do now?`
-- After that, I only said yes to everything. Some tests still don't pass, but those are edge cases. He did follow my recommendations, and built the perfect adapter to run the tests in the original submodule with the new `pass.py` he just built
-- And actually, I just checked, those tests executed with the existing bash implem... See `chat-history/02-fixing-test-suite` to see how I only needed to prompt for a fix - will make a cleaner alternative myself though
-
-You can check the `chat-history` to follow the rest of our changes, I try to only give overall directions and not micromanage: it's funny seeing Claude making little mistakes, and fixing them just as fast as he made those...  
-Feels like watching a beginner, but 10x, or even 100x faster... Maybe in 4 or 5 years I'll have to find something else to do with my life  
-Obviously, this is just a quick experiment for now, and I must say that was quite pleasant  
-Maybe I'll still write some code for some very specific tasks in this repo, but I try to let Claude do as much as he can
+This implementation has been made with [Claude Code](https://github.com/anthropics/claude-code). [You can read more about how this code have been made](chat_history/00-INDEX.md)
 
 ## Features
 
@@ -71,9 +58,16 @@ The `pass.py` script can be used as a drop-in replacement for the original `pass
 
 ## Testing
 
-The Python implementation is designed to be fully compatible with the original bash script and should pass all the tests in `submodules/password-store/tests/`.
+The Python implementation is designed to be fully compatible with the original bash script and should pass all the tests in `submodules/password-store/tests/`. Additional tests have also been written in an automated way, see [the documentation about Claude Code](chat_history/00-INDEX.md)
 
-To test the Python implementation against the original test suite:
+- `make test` tests the Python implementation against both the original test suite and additional tests
+- `make list-test` tests the Python implementation against both the original test suite and additional tests
+- `make diff-tests-list` Show tests that are still not included in the Makefile, or missings in you files
+- `make test-t0001-sanity-checks` Run a specific test file
+- `TEST_ORIGINAL_PASS_VERSION=TRUE make test` Run the test suite against the original `password-store.sh`
+  - Also works with specific tests like `TEST_ORIGINAL_PASS_VERSION=TRUE make test-t0001-sanity-checks`
+- `ONLY_ORIGINAL_TESTS=TRUE make test` Test only against the original test suite, unhandled by file-specific tests
+- `ONLY_ADDITIONAL_TESTS=TRUE make test` Test only against the additional test suite, unhandled by file-specific tests
 
 ```bash
 # Run all tests using the Python implementation

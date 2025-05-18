@@ -32,9 +32,10 @@ PASSWORD_STORE_CHARACTER_SET_NO_SYMBOLS = os.environ.get('PASSWORD_STORE_CHARACT
 PASSWORD_STORE_SIGNING_KEY = os.environ.get('PASSWORD_STORE_SIGNING_KEY', '')
 PASSWORD_STORE_EXTENSIONS_DIR = os.environ.get('PASSWORD_STORE_EXTENSIONS_DIR', os.path.join(PASSWORD_STORE_DIR, '.extensions'))
 PASSWORD_STORE_ENABLE_EXTENSIONS = os.environ.get('PASSWORD_STORE_ENABLE_EXTENSIONS', 'true').lower() == 'true'
+# Editor
 EDITOR = os.environ.get('EDITOR', 'vi')
-
-
+# Executable name
+EXECUTABLE_NAME = sys.argv[0].split('/')[-1]
 # GPG command - prefer gpg2 if available
 GPG = 'gpg2' if shutil.which('gpg2') else 'gpg'
 GPG_OPTS = PASSWORD_STORE_GPG_OPTS + ['--quiet', '--yes', '--compress-algo=none', '--no-encrypt-to']
@@ -341,41 +342,41 @@ def cmd_usage():
     cmd_version()
     print()
     print(f"""Usage:
-    {sys.argv[0]} init [--path=subfolder,-p subfolder] gpg-id...
+    {EXECUTABLE_NAME} init [--path=subfolder,-p subfolder] gpg-id...
         Initialize new password storage and use gpg-id for encryption.
         Selectively reencrypt existing passwords using new gpg-id.
-    {sys.argv[0]} [ls] [subfolder]
+    {EXECUTABLE_NAME} [ls] [subfolder]
         List passwords.
-    {sys.argv[0]} find pass-names...
+    {EXECUTABLE_NAME} find pass-names...
         List passwords that match pass-names.
-    {sys.argv[0]} [show] [--clip[=line-number],-c[line-number]] pass-name
+    {EXECUTABLE_NAME} [show] [--clip[=line-number],-c[line-number]] pass-name
         Show existing password and optionally put it on the clipboard.
         If put on the clipboard, it will be cleared in {PASSWORD_STORE_CLIP_TIME} seconds.
-    {sys.argv[0]} grep [GREPOPTIONS] search-string
+    {EXECUTABLE_NAME} grep [GREPOPTIONS] search-string
         Search for password files containing search-string when decrypted.
-    {sys.argv[0]} insert [--echo,-e | --multiline,-m] [--force,-f] pass-name
+    {EXECUTABLE_NAME} insert [--echo,-e | --multiline,-m] [--force,-f] pass-name
         Insert new password. Optionally, echo the password back to the console
         during entry. Or, optionally, the entry may be multiline. Prompt before
         overwriting existing password unless forced.
-    {sys.argv[0]} edit pass-name
+    {EXECUTABLE_NAME} edit pass-name
         Insert a new password or edit an existing password using {EDITOR}.
-    {sys.argv[0]} generate [--no-symbols,-n] [--clip,-c] [--in-place,-i | --force,-f] pass-name [pass-length]
+    {EXECUTABLE_NAME} generate [--no-symbols,-n] [--clip,-c] [--in-place,-i | --force,-f] pass-name [pass-length]
         Generate a new password of pass-length (or {PASSWORD_STORE_GENERATED_LENGTH} if unspecified) with optionally no symbols.
         Optionally put it on the clipboard and clear board after {PASSWORD_STORE_CLIP_TIME} seconds.
         Prompt before overwriting existing password unless forced.
         Optionally replace only the first line of an existing file with a new password.
-    {sys.argv[0]} rm [--recursive,-r] [--force,-f] pass-name
+    {EXECUTABLE_NAME} rm [--recursive,-r] [--force,-f] pass-name
         Remove existing password or directory, optionally forcefully.
-    {sys.argv[0]} mv [--force,-f] old-path new-path
+    {EXECUTABLE_NAME} mv [--force,-f] old-path new-path
         Renames or moves old-path to new-path, optionally forcefully, selectively reencrypting.
-    {sys.argv[0]} cp [--force,-f] old-path new-path
+    {EXECUTABLE_NAME} cp [--force,-f] old-path new-path
         Copies old-path to new-path, optionally forcefully, selectively reencrypting.
-    {sys.argv[0]} git git-command-args...
+    {EXECUTABLE_NAME} git git-command-args...
         If the password store is a git repository, execute a git command
         specified by git-command-args.
-    {sys.argv[0]} help
+    {EXECUTABLE_NAME} help
         Show this text.
-    {sys.argv[0]} version
+    {EXECUTABLE_NAME} version
         Show version information.
 
 More information may be found in the pass(1) man page.""")
@@ -388,7 +389,7 @@ def cmd_init(argv):
     try:
         opts, args = getopt.getopt(argv, "p:", ["path="])
     except getopt.GetoptError as e:
-        die(f"{e}\nUsage: {sys.argv[0]} init [--path=subfolder,-p subfolder] gpg-id...")
+        die(f"{e}\nUsage: {EXECUTABLE_NAME} init [--path=subfolder,-p subfolder] gpg-id...")
     
     id_path = ""
     
@@ -397,7 +398,7 @@ def cmd_init(argv):
             id_path = arg
     
     if not args:
-        die(f"Usage: {sys.argv[0]} init [--path=subfolder,-p subfolder] gpg-id...")
+        die(f"Usage: {EXECUTABLE_NAME} init [--path=subfolder,-p subfolder] gpg-id...")
     
     # Check paths
     if id_path:
@@ -648,7 +649,7 @@ def cmd_show(argv):
     try:
         opts, args = getopt.getopt(argv, "c::q::", ["clip=", "clip", "qrcode=", "qrcode"])
     except getopt.GetoptError as e:
-        die(f"{e}\nUsage: {sys.argv[0]} show [--clip[=line-number],-c[line-number]] [--qrcode[=line-number],-q[line-number]] [pass-name]")
+        die(f"{e}\nUsage: {EXECUTABLE_NAME} show [--clip[=line-number],-c[line-number]] [--qrcode[=line-number],-q[line-number]] [pass-name]")
     
     for opt, arg in opts:
         if opt in ("-c", "--clip"):
@@ -661,7 +662,7 @@ def cmd_show(argv):
                 selected_line = arg
     
     if clip and qrcode_mode:
-        die(f"Usage: {sys.argv[0]} show [--clip[=line-number],-c[line-number]] [--qrcode[=line-number],-q[line-number]] [pass-name]")
+        die(f"Usage: {EXECUTABLE_NAME} show [--clip[=line-number],-c[line-number]] [--qrcode[=line-number],-q[line-number]] [pass-name]")
     
     # Convert selected_line to int
     try:
@@ -761,7 +762,7 @@ def cmd_show(argv):
 def cmd_find(argv):
     """Find passwords in the password store."""
     if not argv:
-        die(f"Usage: {sys.argv[0]} find pass-names...")
+        die(f"Usage: {EXECUTABLE_NAME} find pass-names...")
 
     print(f"Search Terms: {' '.join(argv)}")
     
@@ -816,7 +817,7 @@ def cmd_find(argv):
 def cmd_grep(argv):
     """Search for pattern in decrypted password files."""
     if not argv:
-        die(f"Usage: {sys.argv[0]} grep [GREPOPTIONS] search-string")
+        die(f"Usage: {EXECUTABLE_NAME} grep [GREPOPTIONS] search-string")
     
     # Process all files in the password store
     matches = []
@@ -935,7 +936,7 @@ def cmd_insert(argv):
     try:
         opts, args = getopt.getopt(argv, "mef", ["multiline", "echo", "force"])
     except getopt.GetoptError as e:
-        die(f"{e}\nUsage: {sys.argv[0]} insert [--echo,-e | --multiline,-m] [--force,-f] pass-name")
+        die(f"{e}\nUsage: {EXECUTABLE_NAME} insert [--echo,-e | --multiline,-m] [--force,-f] pass-name")
     
     for opt, arg in opts:
         if opt in ("-m", "--multiline"):
@@ -946,10 +947,10 @@ def cmd_insert(argv):
             force = 1
     
     if multiline and noecho == 0:
-        die(f"Usage: {sys.argv[0]} insert [--echo,-e | --multiline,-m] [--force,-f] pass-name")
+        die(f"Usage: {EXECUTABLE_NAME} insert [--echo,-e | --multiline,-m] [--force,-f] pass-name")
     
     if len(args) != 1:
-        die(f"Usage: {sys.argv[0]} insert [--echo,-e | --multiline,-m] [--force,-f] pass-name")
+        die(f"Usage: {EXECUTABLE_NAME} insert [--echo,-e | --multiline,-m] [--force,-f] pass-name")
     
     path = args[0].rstrip('/')
     check_sneaky_paths(path)
@@ -1011,7 +1012,7 @@ def cmd_insert(argv):
 def cmd_edit(argv):
     """Edit a password using an editor."""
     if len(argv) != 1:
-        die(f"Usage: {sys.argv[0]} edit pass-name")
+        die(f"Usage: {EXECUTABLE_NAME} edit pass-name")
     
     path = argv[0].rstrip('/')
     check_sneaky_paths(path)
@@ -1144,7 +1145,7 @@ def cmd_generate(argv):
     try:
         opts, args = getopt.getopt(argv, "nqcif", ["no-symbols", "qrcode", "clip", "in-place", "force"])
     except getopt.GetoptError as e:
-        die(f"{e}\nUsage: {sys.argv[0]} generate [--no-symbols,-n] [--clip,-c] [--qrcode,-q] [--in-place,-i | --force,-f] pass-name [pass-length]")
+        die(f"{e}\nUsage: {EXECUTABLE_NAME} generate [--no-symbols,-n] [--clip,-c] [--qrcode,-q] [--in-place,-i | --force,-f] pass-name [pass-length]")
     
     for opt, arg in opts:
         if opt in ("-n", "--no-symbols"):
@@ -1160,15 +1161,15 @@ def cmd_generate(argv):
     
     # Both force and in-place can't be specified at the same time
     if force and inPlace:
-        die(f"Usage: {sys.argv[0]} generate [--no-symbols,-n] [--clip,-c] [--qrcode,-q] [--in-place,-i | --force,-f] pass-name [pass-length]")
+        die(f"Usage: {EXECUTABLE_NAME} generate [--no-symbols,-n] [--clip,-c] [--qrcode,-q] [--in-place,-i | --force,-f] pass-name [pass-length]")
     
     # Both qrcode and clip can't be specified at the same time
     if qrcode_mode and clip:
-        die(f"Usage: {sys.argv[0]} generate [--no-symbols,-n] [--clip,-c] [--qrcode,-q] [--in-place,-i | --force,-f] pass-name [pass-length]")
+        die(f"Usage: {EXECUTABLE_NAME} generate [--no-symbols,-n] [--clip,-c] [--qrcode,-q] [--in-place,-i | --force,-f] pass-name [pass-length]")
     
     # Need either 1 or 2 arguments
     if len(args) < 1 or len(args) > 2:
-        die(f"Usage: {sys.argv[0]} generate [--no-symbols,-n] [--clip,-c] [--qrcode,-q] [--in-place,-i | --force,-f] pass-name [pass-length]")
+        die(f"Usage: {EXECUTABLE_NAME} generate [--no-symbols,-n] [--clip,-c] [--qrcode,-q] [--in-place,-i | --force,-f] pass-name [pass-length]")
     
     path = args[0].rstrip('/')
     check_sneaky_paths(path)
@@ -1269,7 +1270,7 @@ def cmd_delete(argv):
     try:
         opts, args = getopt.getopt(argv, "rf", ["recursive", "force"])
     except getopt.GetoptError as e:
-        die(f"{e}\nUsage: {sys.argv[0]} rm [--recursive,-r] [--force,-f] pass-name")
+        die(f"{e}\nUsage: {EXECUTABLE_NAME} rm [--recursive,-r] [--force,-f] pass-name")
     
     for opt, arg in opts:
         if opt in ("-r", "--recursive"):
@@ -1278,7 +1279,7 @@ def cmd_delete(argv):
             force = 1
     
     if len(args) != 1:
-        die(f"Usage: {sys.argv[0]} rm [--recursive,-r] [--force,-f] pass-name")
+        die(f"Usage: {EXECUTABLE_NAME} rm [--recursive,-r] [--force,-f] pass-name")
     
     path = args[0]
     check_sneaky_paths(path)
@@ -1330,14 +1331,14 @@ def cmd_copy_move(command, argv):
     try:
         opts, args = getopt.getopt(argv, "f", ["force"])
     except getopt.GetoptError as e:
-        die(f"{e}\nUsage: {sys.argv[0]} {command} [--force,-f] old-path new-path")
+        die(f"{e}\nUsage: {EXECUTABLE_NAME} {command} [--force,-f] old-path new-path")
     
     for opt, arg in opts:
         if opt in ("-f", "--force"):
             force = 1
     
     if len(args) != 2:
-        die(f"Usage: {sys.argv[0]} {command} [--force,-f] old-path new-path")
+        die(f"Usage: {EXECUTABLE_NAME} {command} [--force,-f] old-path new-path")
     
     old_path, new_path = args
     check_sneaky_paths(old_path, new_path)

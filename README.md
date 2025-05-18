@@ -61,7 +61,7 @@ The `pass.py` script can be used as a drop-in replacement for the original `pass
 The Python implementation is designed to be fully compatible with the original bash script and should pass all the tests in `submodules/password-store/tests/`. Additional tests have also been written in an automated way, see [the documentation about Claude Code](chat_history/00-INDEX.md)
 
 - `make test` tests the Python implementation against both the original test suite and additional tests
-- `make list-test` tests the Python implementation against both the original test suite and additional tests
+- `make list-test` lists the available tests, including both the original and additional test suites
 - `make diff-tests-list` Show tests that are still not included in the Makefile, or missings in you files
 - `make test-t0001-sanity-checks` Run a specific test file
 - `TEST_ORIGINAL_PASS_VERSION=TRUE make test` Run the test suite against the original `password-store.sh`

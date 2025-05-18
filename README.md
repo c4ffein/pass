@@ -4,7 +4,7 @@ This repository contains a Python implementation of [password-store](https://www
 
 ## Claude Code
 
-This implementation has been made with [Claude Code](https://github.com/anthropics/claude-code). [You can read more about how this code have been made](chat_history/00-INDEX.md)
+This implementation has been made with [Claude Code](https://github.com/anthropics/claude-code). [You can read more about how this code have been made.](chat_history/00-INDEX.md)
 
 ## Features
 

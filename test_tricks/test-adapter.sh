@@ -37,7 +37,7 @@ else  # Run all tests
         done
     fi
     if [[ "${ONLY_ORIGINAL_TESTS,,}" != "true" ]]; then
-        for test in ./n[0-9][0-9][0-9][0-9]-*.sh; do
+        for test in ./u[0-9][0-9][0-9][0-9]-*.sh; do
             echo "Running additional test: $test"
             ./$test
             if [ $? -ne 0 ]; then

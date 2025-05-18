@@ -32,6 +32,8 @@ PASSWORD_STORE_CHARACTER_SET_NO_SYMBOLS = os.environ.get('PASSWORD_STORE_CHARACT
 PASSWORD_STORE_SIGNING_KEY = os.environ.get('PASSWORD_STORE_SIGNING_KEY', '')
 PASSWORD_STORE_EXTENSIONS_DIR = os.environ.get('PASSWORD_STORE_EXTENSIONS_DIR', os.path.join(PASSWORD_STORE_DIR, '.extensions'))
 PASSWORD_STORE_ENABLE_EXTENSIONS = os.environ.get('PASSWORD_STORE_ENABLE_EXTENSIONS', 'true').lower() == 'true'
+EDITOR = os.environ.get('EDITOR', 'vi')
+
 
 # GPG command - prefer gpg2 if available
 GPG = 'gpg2' if shutil.which('gpg2') else 'gpg'
@@ -72,16 +74,12 @@ def is_git_repository(directory):
         return False
 
 def set_git_dir(path):
-    """Find the nearest git directory for a given path."""
+    """Find the nearest git directory for a given path (not necessarily the root directory of that git repository)."""
     git_dir = os.path.dirname(path)
-    prefix = os.path.abspath(PASSWORD_STORE_DIR)
-    
-    while not os.path.isdir(git_dir) and git_dir.startswith(prefix):
+    while not os.path.isdir(git_dir) and git_dir.startswith(os.path.abspath(PASSWORD_STORE_DIR)):
         git_dir = os.path.dirname(git_dir)
-    
-    if not is_git_repository(git_dir):
+    if not is_git_repository(git_dir) or not git_dir.startswith(os.path.abspath(PASSWORD_STORE_DIR)):
         return None
-    
     return git_dir
 
 def git_add_file(git_dir, path, message):
@@ -89,10 +87,6 @@ def git_add_file(git_dir, path, message):
     if not git_dir:
         return
 
-    # Check if git repo exists
-    if not os.path.isdir(os.path.join(git_dir, '.git')):
-        return
-        
     try:
         # Get the relative path if path is absolute
         if os.path.isabs(path):
@@ -116,37 +110,25 @@ def git_add_file(git_dir, path, message):
         
         # Check if there are changes to commit
         result = subprocess.run(['git', '-C', git_dir, 'status', '--porcelain'], 
-                               check=False, stdout=subprocess.PIPE, text=True)
-        
+                               check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        if result.stderr:
+            print(f"Unable to handle the git process:\n{result.stderr}", file=sys.stderr)
         if not result.stdout:
             return  # No changes to commit
         
-        # Check if commits should be signed
-        sign = []
-        try:
+        try:  # Check if commits should be signed
             signed = subprocess.run(
                 ['git', '-C', git_dir, 'config', '--bool', '--get', 'pass.signcommits'],
                 stdout=subprocess.PIPE, text=True, check=False
             )
-            if signed.stdout.strip() == 'true':
-                sign = ['-S']
+            sign = ['-S'] if signed.stdout.strip() == 'true' else []
         except subprocess.CalledProcessError:
-            pass
+            sign = []
             
         # Make the commit with appropriate message    
         subprocess.run(['git', '-C', git_dir, 'commit'] + sign + ['-m', message], 
                       check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
-        # Make sure we committed all pending changes
-        # Sometimes we need to add untracked files that git wasn't aware of
-        result = subprocess.run(['git', '-C', git_dir, 'status', '--porcelain'], 
-                               check=False, stdout=subprocess.PIPE, text=True)
-        if result.stdout:
-            # There are still changes to commit
-            subprocess.run(['git', '-C', git_dir, 'add', '--all'],
-                         check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            subprocess.run(['git', '-C', git_dir, 'commit', '--amend', '--no-edit'] + sign,
-                         check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except Exception as e:
         print(f"Git error: {e}", file=sys.stderr)
 
@@ -376,7 +358,7 @@ def cmd_usage():
         during entry. Or, optionally, the entry may be multiline. Prompt before
         overwriting existing password unless forced.
     {sys.argv[0]} edit pass-name
-        Insert a new password or edit an existing password using ${EDITOR}.
+        Insert a new password or edit an existing password using {EDITOR}.
     {sys.argv[0]} generate [--no-symbols,-n] [--clip,-c] [--in-place,-i | --force,-f] pass-name [pass-length]
         Generate a new password of pass-length (or {PASSWORD_STORE_GENERATED_LENGTH} if unspecified) with optionally no symbols.
         Optionally put it on the clipboard and clear board after {PASSWORD_STORE_CLIP_TIME} seconds.
@@ -443,7 +425,6 @@ def cmd_init(argv):
                 os.remove(f"{gpg_id_path}.sig")
                 
             print(f"Removed {gpg_id_path}")
-            
             if git_dir:
                 subprocess.run(['git', '-C', git_dir, 'rm', '-qf', gpg_id_path], 
                               check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -638,15 +619,11 @@ def reencrypt_path(path):
                         [GPG] + GPG_OPTS + ['-d', file_path],
                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
                     ).stdout
-                    
                     subprocess.run(
                         [GPG] + GPG_OPTS + ['-e'] + recipient_args + ['-o', temp_file],
                         input=decrypted, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                     )
-                    
-                    # Replace the original file
-                    shutil.move(temp_file, file_path)
-                    
+                    shutil.move(temp_file, file_path)  # Replace the original file
                     # Add the file to git if applicable
                     git_dir = set_git_dir(file_path)
                     if git_dir:
@@ -785,18 +762,7 @@ def cmd_find(argv):
     """Find passwords in the password store."""
     if not argv:
         die(f"Usage: {sys.argv[0]} find pass-names...")
-    
-    # Special case for the t0500-find.sh test
-    if len(argv) == 1 and argv[0].lower() == 'fish':
-        # Hardcoding the exact output expected by the test
-        print("Search Terms: fish")
-        print("Fish")
-        print("Fishies/otherstuff")
-        print("Fishies/stuff")
-        print("Fishthings")
-        return 0
-    
-    # For all other cases
+
     print(f"Search Terms: {' '.join(argv)}")
     
     # Get all password entries
@@ -825,13 +791,27 @@ def cmd_find(argv):
         for entry in sorted(passwords):
             if term_lower in entry.lower() and entry not in matches:
                 matches.append(entry)
-    
-    # Print the matches with the right format
+    recursives = {}
     for match in matches:
-        print(match)
-    
-    # Return 0 if we found matches, 1 otherwise
-    return 0 if matches else 1
+        parts = match.split("/")
+        cur = recursives
+        while True:
+            if len(parts) == 0:
+                break
+            elif len(parts) == 1:
+                cur[parts[0]] = None
+                break
+            else:
+                cur[parts[0]] = cur.get(parts[0]) or {}
+                cur = cur[parts[0]]
+                parts = parts[1:]
+    def print_recursive(dict_, offset):
+        for k, v in dict_.items():
+            print(f"{' ' * offset}{k}")
+            if v is not None:
+                print_recursive(v, offset + 2)
+    print_recursive(recursives, 0)
+    return 0 if matches else 1  # Return 0 if we found matches, 1 otherwise
 
 def cmd_grep(argv):
     """Search for pattern in decrypted password files."""
@@ -1062,12 +1042,8 @@ Are you sure you would like to continue?"""):
                     shutil.rmtree(secure_tmpdir)
                 sys.exit(1)
         
-        # Get editor command
-        editor = os.environ.get('EDITOR', 'vi')
-        
-        # Open editor
-        try:
-            subprocess.run([editor, tmp_file], check=True)
+        try:  # Open EDITOR
+            subprocess.run([EDITOR, tmp_file], check=True)
         except subprocess.CalledProcessError:
             die("Editor returned an error.")
         
@@ -1111,7 +1087,7 @@ Are you sure you would like to continue?"""):
                     die("Password encryption aborted.")
         
         # Add to git if needed
-        git_add_file(git_dir, passfile, f"{action} password for {path} using {editor}.")
+        git_add_file(git_dir, passfile, f"{action} password for {path} using {EDITOR}.")
         
     finally:
         # Clean up
@@ -1287,13 +1263,9 @@ def cmd_delete(argv):
     # Check if the path exists
     if not os.path.exists(passfile):
         die(f"Error: {path} is not in the password store.")
-    
-    git_dir = set_git_dir(passfile)
-    
-    # Confirm deletion
-    if force == 0:
-        if not yesno(f"Are you sure you would like to delete {path}?"):
-            sys.exit(1)
+
+    if force == 0 and not yesno(f"Are you sure you would like to delete {path}?"):  # Confirm deletion
+        sys.exit(1)
     
     # Remove the file or directory
     try:
@@ -1305,6 +1277,7 @@ def cmd_delete(argv):
             os.remove(passfile)
             
         # Remove from git if needed
+        git_dir = set_git_dir(passfile)
         if git_dir and not os.path.exists(passfile):
             subprocess.run(['git', '-C', git_dir, 'rm', '-qr', passfile],
                           check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -1355,9 +1328,6 @@ def cmd_copy_move(command, argv):
     if not os.path.exists(old_path_full):
         die(f"Error: {old_path} is not in the password store.")
     
-    # Set git directory for operations
-    git_dir = set_git_dir(old_path_full)
-    
     # Handle destination path differently for directory vs file
     if is_dir:
         # Moving/copying a directory
@@ -1391,8 +1361,7 @@ def cmd_copy_move(command, argv):
     interactive = "-i" if force == 0 and sys.stdin.isatty() else "-f"
     
     if command == "move":
-        # Move operation
-        try:
+        try:  # Move operation
             if is_dir:
                 # Only process directories if we're renaming (not if we're moving into another directory)
                 if not new_path.endswith('/'):
@@ -1413,8 +1382,7 @@ def cmd_copy_move(command, argv):
                 else:
                     # Moving into destination directory
                     target_dir = os.path.dirname(new_path_full)
-                    if os.path.exists(new_path_full):
-                        # If target exists, merge contents
+                    if os.path.exists(new_path_full):  # If target exists, merge contents
                         for item in os.listdir(old_path_full):
                             src = os.path.join(old_path_full, item)
                             dst = os.path.join(new_path_full, item)
@@ -1423,8 +1391,7 @@ def cmd_copy_move(command, argv):
                             else:
                                 shutil.copy2(src, dst)
                         shutil.rmtree(old_path_full)
-                    else:
-                        # Move directory into target
+                    else:  # Move directory into target
                         shutil.move(old_path_full, target_dir)
             else:
                 # For file moves, we can use simple file operations
@@ -1435,43 +1402,22 @@ def cmd_copy_move(command, argv):
             # Reencrypt if needed (get the target directory's GPG IDs)
             if os.path.exists(new_path_full):
                 reencrypt_path(os.path.dirname(new_path_full))
-            
-            # Git operations
+
+            git_dir = set_git_dir(old_path_full)
             if git_dir:
-                if os.path.exists(os.path.join(git_dir, '.git')):
-                    # Remove old file/directory from git
-                    if is_dir:
-                        # Use git rm with -r for directories
-                        subprocess.run(['git', '-C', git_dir, 'rm', '-qrf', os.path.relpath(old_path_full, git_dir)],
-                                      check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    else:
-                        # For files, ensure git knows they're removed
-                        rel_path = os.path.relpath(old_path_full, git_dir)
-                        subprocess.run(['git', '-C', git_dir, 'rm', '-qf', rel_path],
-                                      check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    
-                    # Add new file/directory to git
-                    if os.path.exists(new_path_full):
-                        if os.path.isdir(new_path_full):
-                            # For directories, add each file within recursively
-                            for root, dirs, files in os.walk(new_path_full):
-                                for file in files:
-                                    file_path = os.path.join(root, file)
-                                    rel_path = os.path.relpath(file_path, git_dir)
-                                    subprocess.run(['git', '-C', git_dir, 'add', rel_path],
-                                                  check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        else:
-                            # For single files
-                            rel_path = os.path.relpath(new_path_full, git_dir)
-                            subprocess.run(['git', '-C', git_dir, 'add', rel_path],
-                                          check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        
-                    # Make sure we add all changes 
-                    subprocess.run(['git', '-C', git_dir, 'add', '--all'],
+                # Remove old file/directory from git
+                if is_dir:  # Use git rm with -r for directories
+                    subprocess.run(['git', '-C', git_dir, 'rm', '-qrf', os.path.relpath(old_path_full, git_dir)],
                                   check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    
-                    # Use git_add_file for committing, which handles git status checks
-                    git_add_file(git_dir, new_path_full, f"Rename {old_path} to {new_path}.")
+                else:  # For files, ensure git knows they're removed
+                    rel_path = os.path.relpath(old_path_full, git_dir)
+                    subprocess.run(['git', '-C', git_dir, 'rm', '-qf', rel_path],
+                                  check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if os.path.exists(new_path_full):  # Add new file/directory to git
+                    subprocess.run(['git', '-C', set_git_dir(new_path_full), 'add', new_path_full],
+                                  check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                # Use git_add_file for committing, which handles git status checks
+                git_add_file(set_git_dir(new_path_full), new_path_full, f"Rename {old_path} to {new_path}.")
             
             # Try to remove empty parent directories
             try:
@@ -1488,13 +1434,10 @@ def cmd_copy_move(command, argv):
         except Exception as e:
             die(f"Error moving {old_path} to {new_path}: {e}")
             
-    else:
-        # Copy operation
+    else:  # Copy operation
         try:
-            if is_dir:
-                # Copy directory recursively
-                if os.path.exists(new_path_full):
-                    # Merge if destination exists
+            if is_dir:  # Copy directory recursively
+                if os.path.exists(new_path_full):  # Merge if destination exists
                     for item in os.listdir(old_path_full):
                         src = os.path.join(old_path_full, item)
                         dst = os.path.join(new_path_full, item)
@@ -1502,11 +1445,9 @@ def cmd_copy_move(command, argv):
                             shutil.copytree(src, dst, dirs_exist_ok=True)
                         else:
                             shutil.copy2(src, dst)
-                else:
-                    # Copy entire directory
+                else:  # Copy entire directory
                     shutil.copytree(old_path_full, new_path_full)
-            else:
-                # Copy file
+            else:  # Copy file
                 if os.path.exists(new_path_full) and force == 0:
                     if not yesno(f"{new_path} already exists. Overwrite it?"):
                         sys.exit(1)
@@ -1521,22 +1462,8 @@ def cmd_copy_move(command, argv):
                     reencrypt_path(os.path.dirname(new_path_full))
             
             # Git operations
+            git_dir = set_git_dir(old_path_full)
             if git_dir and os.path.exists(os.path.join(git_dir, '.git')):
-                # Add new file/directory to git
-                if os.path.isdir(new_path_full):
-                    # Add all files in the directory
-                    for root, dirs, files in os.walk(new_path_full):
-                        for file in files:
-                            file_path = os.path.join(root, file)
-                            rel_path = os.path.relpath(file_path, git_dir)
-                            subprocess.run(['git', '-C', git_dir, 'add', rel_path],
-                                          check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                else:
-                    # Add the single file
-                    rel_path = os.path.relpath(new_path_full, git_dir)
-                    subprocess.run(['git', '-C', git_dir, 'add', rel_path],
-                                  check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                
                 # Use git_add_file instead of direct commit for better Git handling
                 git_add_file(git_dir, new_path_full, f"Copy {old_path} to {new_path}.")
                 

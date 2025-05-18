@@ -24,3 +24,11 @@ test-t0400-grep:
 	./test_tricks/test-adapter.sh t0400-grep.sh
 test-t0500-find:
 	./test_tricks/test-adapter.sh t0500-find.sh
+test-u0001-advanced-grep-tests:
+	./test_tricks/test-adapter.sh u0001-advanced-grep-tests.sh
+test-u0002-special-characters-tests:
+	./test_tricks/test-adapter.sh u0002-special-characters-tests.sh
+test-u0003-complex-move-tests:
+	./test_tricks/test-adapter.sh u0003-complex-move-tests.sh
+test-u0004-password-generation-options:
+	./test_tricks/test-adapter.sh u0004-password-generation-options.sh

@@ -18,50 +18,48 @@ Maybe I'll still write some code for some very specific tasks in this repo, but 
 ### [01-creating-the-project](01-creating-the-project)
 Claude analyzed the existing password-store submodule, created a CLAUDE.md file, and started building a Python implementation from scratch. Implemented the core functionality of pass.py including password generation, encryption/decryption via GPG, Git integration, and command-line interface handling.
 
-### 02-fixing-test-suite
+### [02-fixing-test-suite](02-fixing-test-suite)
 After I discovered that the test-adapter.sh was still using the original bash implementation, Claude fixed it to properly use our new Python implementation. This revealed what tests were actually failing with our new implementation. Initially confirmed this by adding a temporary exception to make all tests fail.
 
-### 03-understanding-my-refactor-of-test-adapter
+### [03-understanding-my-refactor-of-test-adapter](03-understanding-my-refactor-of-test-adapter)
 Claude analyzed my own refactoring of the test adapter and complimented the approach of creating a temporary testing environment where the original script is replaced with our Python implementation, calling it a "cleaner solution that reduces complexity."
 
-### 04-error-value-in-test-adapter
+### [04-error-value-in-test-adapter](04-error-value-in-test-adapter)
 Claude updated the test-adapter.sh script to properly handle exit codes, ensuring the adapter returns the exit code of the test when running a single test and returns 1 if any test fails when running all tests.
 
-### 05-added-list-of-missing-tests
+### [05-added-list-of-missing-tests](05-added-list-of-missing-tests)
 Added Makefile commands to list tests missing from the Makefile by comparing the test files in the repository with the targets defined in the Makefile. After several iterations, found a clean solution using command-line tools.
 
-### 06-a-lovely-sycophant
+### [06-a-lovely-sycophant](06-a-lovely-sycophant)
 Claude analyzed my simplified version of the Makefile commands and appropriately recognized the improvements made, noting the more concise approach with the direct diff-tests-list command.
 
-### 07-naive-try-at-fixing-red-tests-part-1
+### [07-naive-try-at-fixing-red-tests-part-1](07-naive-try-at-fixing-red-tests-part-1)
 Started fixing failing tests, prioritizing issues with Unicode handling in the 'show' command, directory move/rename operations, and other functionality. Made some progress but still had failing test cases.
 
-### 08-naive-try-at-fixing-red-tests-part-2
+### [08-naive-try-at-fixing-red-tests-part-2](08-naive-try-at-fixing-red-tests-part-2)
 Claude worked through fixing various issues in the pass.py implementation over several sessions to make more tests pass.
 
-### 09-naive-try-at-fixing-red-tests-part-3
+### [09-naive-try-at-fixing-red-tests-part-3](09-naive-try-at-fixing-red-tests-part-3)
 Idem.
 
-### 10-naive-try-at-fixing-red-tests-part-4
+### [10-naive-try-at-fixing-red-tests-part-4](10-naive-try-at-fixing-red-tests-part-4)
 Idem.
 
-### 11-naive-try-at-fixing-red-tests-part-5
+### [11-naive-try-at-fixing-red-tests-part-5](11-naive-try-at-fixing-red-tests-part-5)
 Idem.
-
-### 12-fixed-it-myself-but-asked-for-an-opinion
-Claude worked through fixing various issues in the pass.py implementation over several sessions to make more tests pass, but really seemed stuck this time.
+But really seemed stuck this time.
 I fixed the remaining issues myself as seen in session 12.
 
-### 12-fixed-it-myself-but-asked-for-an-opinion
+### [12-fixed-it-myself-but-asked-for-an-opinion](12-fixed-it-myself-but-asked-for-an-opinion)
 Claude analyzed my fixes, which included improvements to git repository handling, the find command, environment variable handling, error handling, and general code cleanup.
 
-### 13-asking-for-some-additional-tests-but-just-vibing
+### [13-asking-for-some-additional-tests-but-just-vibing](13-asking-for-some-additional-tests-but-just-vibing)
 Created additional tests to test more complex scenarios that the original tests didn't cover.
 
-### 14-claude-making-those-tests-pass
+### [14-claude-making-those-tests-pass](14-claude-making-those-tests-pass)
 Claude fixed issues in the pass.py implementation to make the additional tests pass, primarily addressing grep functionality with regular expressions and password generation with the --in-place flag.
 
-### 15-chat-history-itself
+### [15-chat-history-itself](15-chat-history-itself)
 Asked Claude to generate this chat history.
 
 ## Overall Progress

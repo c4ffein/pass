@@ -19,7 +19,7 @@ This implementation has been made with [Claude Code](https://github.com/anthropi
 
 ## Dependencies
 
-The Python implementation has the same system dependencies as the original:
+The Python implementation relies on some of the same system dependencies as the original:
 
 - GnuPG2
 - git

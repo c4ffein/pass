@@ -25,8 +25,6 @@ The Python implementation has the same system dependencies as the original:
 - git
 - xclip (for X11 environments)
 - wl-clipboard (for Wayland environments)
-- tree >= 1.7.0
-- GNU getopt
 - qrencode (optional, for QR code support)
 
 ## Usage

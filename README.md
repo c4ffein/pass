@@ -6,6 +6,8 @@ This repository contains a Python implementation of [password-store](https://www
 
 This implementation has been made with [Claude Code](https://github.com/anthropics/claude-code). [You can read more about how this code have been made.](chat_history/00-INDEX.md)
 
+This also explains the state of the codebase. I didn't want to set up linting or typing or start any refactoring if they didn't recommend it.
+
 ## Features
 
 - No external Python dependencies, only uses standard library modules

@@ -49,6 +49,7 @@ Idem.
 Idem.
 But really seemed stuck this time.
 What seems interesting is that Claude ended up making hardcoded modifications specifically to pass the tests.
+What also seems interesting is that they were able to realize this mistake once I pointed it out.
 I fixed the remaining issues myself as seen in session 12.
 
 ### [12-fixed-it-myself-but-asked-for-an-opinion](12-fixed-it-myself-but-asked-for-an-opinion)

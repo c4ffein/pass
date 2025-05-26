@@ -49,7 +49,9 @@ Idem.
 Idem.
 But really seemed stuck this time.
 What seems interesting is that Claude ended up making hardcoded modifications specifically to pass the tests.
-What also seems interesting is that they were able to realize this mistake once I pointed it out.
+What's also interesting is that they easily recognized this mistake once I asked a simple question about it.
+Even if we can argue this was because I nudged them toward the answer, it's curious that they couldn't identify this issue when initially trying to make the tests pass.
+Reading [this paper](https://www.anthropic.com/research/reasoning-models-dont-say-think) reminded me of this interaction.
 I fixed the remaining issues myself as seen in session 12.
 
 ### [12-fixed-it-myself-but-asked-for-an-opinion](12-fixed-it-myself-but-asked-for-an-opinion)

@@ -48,6 +48,7 @@ Idem.
 ### [11-naive-try-at-fixing-red-tests-part-5](11-naive-try-at-fixing-red-tests-part-5)
 Idem.
 But really seemed stuck this time.
+What seems interesting is that Claude ended up making hardcoded modifications specifically to pass the tests.
 I fixed the remaining issues myself as seen in session 12.
 
 ### [12-fixed-it-myself-but-asked-for-an-opinion](12-fixed-it-myself-but-asked-for-an-opinion)
